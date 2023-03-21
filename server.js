@@ -1,15 +1,61 @@
 'use strict';   
 const express= require('express');
 const cors = require('cors');
+
 const axios = require('axios');
-const query = 'The Shawshank Redemption';
 require('dotenv').config();
 const app = express();
-app.use(cors());
-const PORT = process.env.PORT;
-const apikey='47020856b0ee092b49ba287b048e44d5';
-const url ="const url = `https://api.themoviedb.org/3/trending/movie/week?api_key=${apiKey}`";
 
+const PORT = process.env.PORT;
+
+const apikey='47020856b0ee092b49ba287b048e44d5';
+const url = `https://api.themoviedb.org/3/trending/movie/week?api_key=${apikey}`;
+app. get ('/search', search)
+app.get('/', homeHandler);
+app.use(cors());
+
+
+function recipesHandler(req, res){
+  //axios.get(url).then().catch()
+  let url = `https://api.spoonacular.com/recipes/random?apiKey=${apikey}`;
+  axios.get(url)
+  .then((result)=>{
+      console.log(result.data.recipes);
+
+      let dataRecipes = result.data.recipes.map((recipe)=>{
+          return new DataQuery(recipe.title, recipe.readyInMinutes,recipe.image)
+      })
+      // res.json(result.data.recipes);
+      res.json(dataRecipes);
+  })
+  .catch((err)=>{
+      console.log(err);
+  })
+
+} 
+
+function search (req,res)
+{let reqName= req.query.name;
+  let url ='https://api.spoonacular.com/recipes/complexSearch?query=${reqName}&apiKey=${apikey}';
+  
+  console.log(reqName);
+ axios.get(url)
+ .then((result)=>{
+  console.log(result.data.results);
+  let response= result.data.results;
+  res.json(response);
+})
+.catch((err)=>{
+  console.log(err)
+})
+}
+function DataQuery(title,time,image){
+  this.title=title;
+  this.time=time;
+  this.image=image;
+
+
+}
 axios.get(url)
   .then(response => {
   
@@ -27,25 +73,9 @@ axios.get(url)
     console.log(error);
   });
 
-   
-  axios.get(url)
-    .then(response => {
-     
-      const movie = response.data.results[0];
-      const movieData = {
-        id: movie.id,
-        title: movie.title,
-        release_date: movie.release_date,
-        poster_path: movie.poster_path,
-        overview: movie.overview
-      };
-      console.log(movieData);
-    })
-    .catch(error => {
-      console.log(error);
-    });
   
-app.listen(PORT, () => {
+  
+  app.listen(PORT, () => {
     console.log(`listening on port ${PORT}`);
 })
 
