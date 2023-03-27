@@ -1,5 +1,8 @@
-CREATE TABLE Movi
+CREATE TABLE movi
 (
-name varchar(255),
+id SERIAL PRIMARY KEY ,
+title varchar(255),
+poster varchar(255),
+overview varchar(255),
 comments varchar(255)
 )

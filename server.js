@@ -1,59 +1,109 @@
 'use strict';   
 const express= require('express');
 const cors = require('cors');
- const axios = require('axios');
+const axios = require('axios');
 require('dotenv').config();
 const app = express();
 const movieData=require(`./movieData.json`);
 const {json}= require("express");
-
-const PORT = process.env.PORT;
-
-const apiKey= process.env.API_KEY;
+const http = require('http');
+const PORT = process.env.PORT || 3000;
+const apikey= process.env.API_KEY;
 const{Client}=require('pg');
 let url = `postgres://duaa:0000@localhost:5432/movies`;
 const client=new Client(url);
+//to read json file
 const bodyParser = require('body-parser')
-app.post("/addMovie",addMovieHandler);
-app.get("getMovies",getAmovie);
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json());
+//
 app.use(cors());
 app.use(express.json());
+app.use(errorHandler);
+// using http methods for movie table lab-13
+app.post('/addMovie' , addMovieHandler);
+app.get('/getMovies' , getMovie);
+//using http methods for movie table - Lab14
+app.get('/getMovie/:getMoId', getIdAmovie);
+app.put('/UPDATE/:updateMoId' , updateMovieHandler);
+app.delete('/DELETE/:deltMoId' , deleteMovieHandler);
 
-app.get ('/favorit',favoritePagehandler);
-// app.get('/',HomePageHandler);
+ app.get('/',HomePageHandler);
+//using http method for movie - Lab12
+app.get ('/favorit',favoritePagehandler);//
 app.get('/search',searchHandler);
 app.get('/trending',trendingPageHandler );
 // app.get('/usually',Film );
 app.get('/film',filmHandler);
 app .get('*',handleNotFoundError);
-
+function HomePageHandler(req,res)
+{
+console.log ("hi");
+}
 function addMovieHandler(req,res)
 {
-  let {name,comments} = req.body; // destructuring 
+  console.log(req.body);
+  let {title,poster,overview,comments} = req.body; // destructuring 
   // client.query(sql,values)
-  let sql = `INSERT INTO Movie (name,comments)
-  VALUES ($1,$2) RETURNING *; `
-  let values = [name,comments]
+  let sql = `INSERT INTO movi (title,poster,overview,comments)
+  VALUES ($1,$2,$3,$4) RETURNING *; `
+  let values = [title,poster,overview,comments]
   client.query(sql,values).then((result)=>{
       console.log(result.rows)
     
       res.status(201).json(result.rows)
     }
 
-    ).catch((err)=>{
-        errorHandler(err,req,res);
-    })
+    ).catch()
+  }
+    function updateMovieHandler(req,res)
+    {console.log("hi");
+      let updateMovies= req.params.updateMoId;
+      let {title,poster,overview,comments}=req.body;
+      let sql =`UPDATE movi SET title=$1 ,poster=$2, overview=$3,comments=$4
+      WHERE id = $5 RETURNING *;`
+      let values =[title,poster,overview,comments,updateMovies];
+      client.query(sql,values) .then(result=>{
+      
+        res.send(result.rows)
+    }).catch()
+       
+    }
 
-}
-function getAmovie(req,res)
+
+function deleteMovieHandler(req,res)
 {
-  let sql =`SELECT * FROM Movi`; //read all data from database table
+  //let {recipeName} = req.params; //destructuring
+  
+  let deltMoId = req.params.deltMoId
+  let sql=`DELETE FROM movi WHERE id = $1;` 
+  let value = [deltMoId];
+  client.query(sql,value).then(result=>{
+      res.status(204).send("deleted");
+  }).catch()
+}
+function getIdAmovie(req,res)
+{
+  
+  let getMoId = req.params.getMoId;
+  let sql =`SELECT * FROM movi WHERE id = $1 ;`
+  let value=[getMoId];
+  client.query(sql,value).then((result)=>{
+      res.send(result.rows)
+  })
+  .catch()
+  }
+
+
+function getMovie(req,res)
+
+
+{
+  let sql =`SELECT * FROM movi`; //read all data from database table
     client.query(sql).then((result)=>{
         console.log(result);
         res.json(result.rows)
-    }).catch((err)=>{
-        errorHandler(err,req,res)
-    })
+    }).catch()
 }
 
 function Movies(title,poster,overview)
@@ -98,7 +148,8 @@ function filmHandler(req,res)
     })
     res.json(shapeOfdata);
   })
-  .catch((err)=>{console.log(err);})
+  .catch();
+ // .catch((err)=>{console.log(err);})
 
 }
 function searchHandler(req,res)
@@ -112,7 +163,7 @@ axios.get(url)
   });
   res.json(reqMovie)
 })
-.catch((err)=>{console.log(err);})
+.catch()
 }
 
 
@@ -134,95 +185,51 @@ function trendingPageHandler(req,res)
   }});
   res.json(shapeOfdata);
 })
-.catch((err)=>{
-  console.log(err);
-})
+.catch()
+
 
 }
 function favoritePagehandler(req,res)
 {
 let result=[];
-let newMovie=new movies(movieData.title,movieData.poster,movieData.overview);
+let newMovie=new Movies(movieData.title,movieData.poster,movieData.overview);
 result.push(newMovie);
 res.send(result);
 }
-function handleNotFoundError(req,res)
-{
-res.status(404).send("page is Not Found");
+// function handleNotFoundError(req,res)
+// {
+// res.status(404).send("page is Not Found");
 
+// }
+function errorHandler(err, req, res, next) {
+  if (!(res instanceof http.ServerResponse)) {
+    return next(err);
+  }
+
+  res.status(500);
+  res.json({ error: err });
 }
-app.use (function(err,req,res,next)
-{
-  console.error(err.stack);
-  res.status(500).send({
-    status:500,
-    responseText:`sorry `
-  });
-});
 
-// function recipesHandler(req, res){
-//   //axios.get(url).then().catch()
-//   let url = `https://api.spoonacular.com/recipes/random?apiKey=${apikey}`;
-//   axios.get(url)
-//   .then((result)=>{
-//       console.log(result.data.recipes);
-
-//       let dataRecipes = result.data.recipes.map((recipe)=>{
-//           return new DataQuery(recipe.title, recipe.readyInMinutes,recipe.image)
-//       })
-//       // res.json(result.data.recipes);
-//       res.json(dataRecipes);
-//   })
-//   .catch((err)=>{
-//       console.log(err);
-//   })
-
-// } 
-
-// function search (req,res)
-// {let reqName= req.query.name;
-//   let url ='https://api.spoonacular.com/recipes/complexSearch?query=${reqName}&apiKey=${apikey}';
-  
-//   console.log(reqName);
-//  axios.get(url)
-//  .then((result)=>{
-//   console.log(result.data.results);
-//   let response= result.data.results;
-//   res.json(response);
-// })
-// .catch((err)=>{
-//   console.log(err)
-// })
-// }
-// function DataQuery(title,time,image){
-//   this.title=title;
-//   this.time=time;
-//   this.image=image;
-
-
-// }
-// axios.get(url)
-//   .then(response => {
-  
-//     const trendingMovie = response.data.results[0];
-//     const movieData = {
-//       id: trendingMovie.id,
-//       title: trendingMovie.title,
-//       release_date: trendingMovie.release_date,
-//       poster_path: trendingMovie.poster_path,
-//       overview: trendingMovie.overview
-//     };
-//     console.log(movieData);
-//   })
-//   .catch(error => {
-//     console.log(error);
+// app.use (function(err,req,res,next)
+// {
+//   console.error(err.stack);
+//   res.status(500).send({
+//     status:500,
+//     responseText:`sorry `
 //   });
+// });
+function handleNotFoundError(error,req,res){
+   
+  res.status(500).send(error)
+}
+
+
 
   
-client.connect().then(() => {
+client.connect().then(()=>{
+  app.listen(PORT,()=>{
+      console.log(`listening on port${PORT}`);
+  })
 
-  app.listen(PORT, () => {
-      console.log(`Server is listening ${PORT}`);
-  });
-})
+}).catch()
 
