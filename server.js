@@ -87,7 +87,7 @@ else if(trending.name){
 });
  function searchHandler(req,res){
   let clientRequest=req.query.title;
-let url=`https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${clientRequest}&page=2`
+let url=`https://api.themoviedb.org/3/search/movie?api_key=a6787f488adbc7363fab6b930e3aece3&language=en-US&query=${clientRequest}&page=2`
  axios.get(url)
  .then((result)=>{
   
