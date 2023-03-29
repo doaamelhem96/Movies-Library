@@ -1,81 +1,112 @@
-'use strict';   
-const express= require('express');
-const cors = require('cors');
 
-const axios = require('axios');
-require('dotenv').config();
-const app = express();
-
-const PORT = process.env.PORT;
-
-const apikey='47020856b0ee092b49ba287b048e44d5';
-const url = `https://api.themoviedb.org/3/trending/movie/week?api_key=${apikey}`;
-app. get ('/search', search)
-app.get('/', homeHandler);
+'use strict';
+const express = require('express')
+const cors=require('cors');
+const app = express()
+const axios=require('axios');
 app.use(cors());
+const port = 3000;
+
+app.get('/',myMovieApp);
+app.get('/favorite',myFirstMovie);
+app.get('/trending',trendingHandler);
+app.get('/search',searchHandler);
+app.get('*',handlePageNotFoundError);
+const PORT=process.env.PORT;
+const api_key=process.env.API_Key;
 
 
-function recipesHandler(req, res){
-  //axios.get(url).then().catch()
-  let url = `https://api.spoonacular.com/recipes/random?apiKey=${apikey}`;
+function myMovieApp(req, res) {
+  
+  let newConst=new Constmovie(movieData.title,movieData.poster_path,movieData.overview);
+  res.json(newConst);
+}
+
+
+function Constmovie(title,poster_path,overview){
+this.title=title;
+this.poster_path=poster_path;
+this.overview=overview;
+}
+
+
+
+function myFirstMovie(req,res){
+    res.send("Welcome to Favorite Page");
+}
+
+
+app.listen(port, () => {
+  console.log(`Movie app listening on port ${port}`)
+})
+
+
+
+function handlePageNotFoundError() {
+    res.status(404).send("NOT FOUND");
+    
+  }
+
+
+function trendingHandler(req,res){
+let url=`https://api.themoviedb.org/3/trending/all/week?api_key=a6787f488adbc7363fab6b930e3aece3&language=en-US`
   axios.get(url)
   .then((result)=>{
-      console.log(result.data.recipes);
-
-      let dataRecipes = result.data.recipes.map((recipe)=>{
-          return new DataQuery(recipe.title, recipe.readyInMinutes,recipe.image)
-      })
-      // res.json(result.data.recipes);
-      res.json(dataRecipes);
+    
+    console.log(result.data.result)
+let dataTrend=result.data.results.map((trending)=>
+{ if(trending.title){
+  return new Trend(trending.id,trending.title,trending.release_date,trending.poster_path,trending.overview)
+}
+else if(trending.name){
+  return new Trend(trending.id,trending.name,trending.release_date,trending.poster_path,trending.overview) 
+}
+})
+  
+  res.json(dataTrend);
   })
   .catch((err)=>{
-      console.log(err);
+    console.log(err)
   })
 
-} 
-
-function search (req,res)
-{let reqName= req.query.name;
-  let url ='https://api.spoonacular.com/recipes/complexSearch?query=${reqName}&apiKey=${apikey}';
-  
-  console.log(reqName);
+}
+  function Trend(id,title,releasedate,poster_path,overview){
+    this.id=id;
+    this.title=title;
+    this.release_date=releasedate;
+    this.poster_path=poster_path;
+    this.overview=overview;
+  }
+  app.use (function handleServerError(err,req,res,next) {
+    console.error(err.stack);
+    res.status(500).send ({
+      status:500,
+   responseText: 'Sorry, something went wrong'
+    
+  });
+});
+ function searchHandler(req,res){
+  let clientRequest=req.query.title;
+let url=`https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${clientRequest}&page=2`
  axios.get(url)
  .then((result)=>{
-  console.log(result.data.results);
-  let response= result.data.results;
-  res.json(response);
+  
+  
+  let reqM=result.data.results.map((movies)=>{
+ return new Trend(movies.title,movies.poster_path,movies.overview)
+ })
+ res.json(reqM);
 })
 .catch((err)=>{
   console.log(err)
 })
 }
-function DataQuery(title,time,image){
-  this.title=title;
-  this.time=time;
-  this.image=image;
 
 
-}
-axios.get(url)
-  .then(response => {
-  
-    const trendingMovie = response.data.results[0];
-    const movieData = {
-      id: trendingMovie.id,
-      title: trendingMovie.title,
-      release_date: trendingMovie.release_date,
-      poster_path: trendingMovie.poster_path,
-      overview: trendingMovie.overview
-    };
-    console.log(movieData);
-  })
-  .catch(error => {
-    console.log(error);
-  });
+
+
+
+
 
   
-  
-  app.listen(PORT, () => {
-    console.log(`listening on port ${PORT}`);
-})
 
