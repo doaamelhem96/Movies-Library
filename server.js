@@ -7,7 +7,7 @@ const app = express();
 const movieData=require(`./movieData.json`);
 const {json}= require("express");
 const http = require('http');
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const apikey= process.env.API_KEY;
 const{Client}=require('pg');
 let url = `postgres://duaa:0000@localhost:5432/movies`;
@@ -97,13 +97,15 @@ function getIdAmovie(req,res)
 
 function getMovie(req,res)
 
-
 {
   let sql =`SELECT * FROM movi`; //read all data from database table
-    client.query(sql).then((result)=>{
-        console.log(result);
-        res.json(result.rows)
-    }).catch()
+ 
+  client.query(sql).then((result)=>{
+      
+      res.json(result.rows)
+  }).catch((err)=>{
+    handleNotFoundError(err,req,res)
+  })
 }
 
 function Movies(title,poster,overview)
